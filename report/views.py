@@ -1,18 +1,79 @@
 # -*-encoding: utf-8 -*-
+import json
+
+from flask import abort
 from flask import Blueprint
 from flask import jsonify
 from flask import Response
 
+from report.model import Report
 
 print('%s __name__ %s' % (__file__, __name__))
 bp = Blueprint('report', __name__, template_folder='templates')
+
+new_test_data = [
+  {
+    'id': 1,
+    'title': u'上半年销售情况',
+    'layout': 'linear-layout',
+    'components': [
+      {
+        'type': 've-line',
+        'options': {
+          'data': 'http://localhost:5000/data/0',
+          'mapping': {
+            'fields': [
+                {'name': 'date', 'label': u'日期'},
+                {'name': 'sales_q1', 'label': u'销售额-1季度'},
+                {'name': 'sales_q2', 'label': u'销售额-2季度'},
+                {'name': 'percent', 'label': u'占比'},
+                {'name': 'other', 'label': u'其他'}
+            ],
+            'dimension': [0],
+            'metrics': [1, 2, 3],
+            'yAxises': [
+                {'type': 'value', 'position': 'left'},
+                {'type': 'percent', 'position': 'right', 'metrics': [3]}
+            ],
+            'extra': {
+              'digit': 4
+            }
+          },
+          'extra': {
+            'width': '100%'
+          }
+        }
+      }
+    ]
+  },
+  {
+    'id': 2,
+    'title': u'员工学历分布情况',
+    'layout': 'linear-layout',
+    'components': [
+      {
+        'type': 'report-paragraph',
+        'options': {
+          'data': 'http://localhost:5000/data/1',
+          'mapping': {
+            'fields': [
+              {'name': 'total', 'label': 'total'},
+              {'name': 'bachelorPercent', 'label': 'bachelorPercent', 'formatter': 'percent'}
+            ]
+          },
+          'content': u'目前公司员工{{total}}人，其中本科以上学历的占比{{bachelorPercent}}。'
+        }
+      }
+    ]
+  }
+]
 
 test_data = [
   {
     'id': 1,
     'title': u'员工学历分布情况',
     'template': {
-      'component': 'linear-layout',
+      'layout': 'linear-layout',
       'children': [
         {
           'component': 'report-paragraph',
@@ -71,7 +132,7 @@ test_data = [
     'id': 2,
     'title': u'月度产销情况汇总',
     'template': {
-      'component': 'linear-layout',
+      'layout': 'linear-layout',
       'children': [
         {
           'component': 'b-table',
@@ -93,22 +154,59 @@ test_data = [
         }
       ]
     }
+  },
+  {
+    'id': 3,
+    'title': u'上半年销售情况',
+    'template': {
+      'layout': 'linear-layout',
+      'children': [
+        {
+          'component': 've-line',
+          'data': {
+            'data': {
+              'columns': ['日期', '销售额-1季度', '销售额-2季度', '占比', '其他'],
+              'rows': [
+                { '日期': '1月1日', '销售额-1季度': 1523, '销售额-2季度': 1523, '占比': 0.12, '其他': 100 },
+                { '日期': '1月2日', '销售额-1季度': 1223, '销售额-2季度': 1523, '占比': 0.345, '其他': 100 },
+                { '日期': '1月3日', '销售额-1季度': 2123, '销售额-2季度': 1523, '占比': 0.7, '其他': 100 },
+                { '日期': '1月4日', '销售额-1季度': 4123, '销售额-2季度': 1523, '占比': 0.31, '其他': 100 },
+                { '日期': '1月5日', '销售额-1季度': 3123, '销售额-2季度': 1523, '占比': 0.12, '其他': 100 },
+                { '日期': '1月6日', '销售额-1季度': 7123, '销售额-2季度': 1523, '占比': 0.65, '其他': 100 }
+              ]
+            },
+            'settings': {
+              'yAxis': [
+                {'type': 'value'},
+                {'type': 'value', 'position': 'right', 'name': '占比'}
+              ],
+              'metrics': ['销售额-1季度', '销售额-2季度', '占比'],
+              'dimension': ['日期']
+            },
+            'width': '100%'
+          }
+        }
+      ]
+    }
   }
 ]
 
 
 @bp.route('/', methods=['GET'])
 def list():
-    reports = [{'id': each['id'], 'title': each['title']} for each in test_data]
+    data = new_test_data
+    reports = [{'id': each['id'], 'title': each['title']} for each in data]
     return jsonify(reports)
 
 @bp.route('/<int:id>', methods=['GET'])
 def get(id):
+    data = new_test_data
     found = None
-    for each in test_data:
+    for each in data:
         if each['id'] == id:
             found = each
             break
     if found is None:
         abort(404)
-    return jsonify(found)
+    report = Report.parse(json.dumps(found))
+    return jsonify(report.render())
