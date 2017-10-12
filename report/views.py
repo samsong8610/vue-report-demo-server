@@ -18,9 +18,18 @@ new_test_data = [
     'layout': 'linear-layout',
     'components': [
       {
-        'type': 've-line',
+        'type': 'vs-line',
         'options': {
-          'data': 'http://localhost:5000/data/0',
+          'data': {
+            'url': 'http://localhost:5000/data/0',
+            'queries': [
+              {
+                'name': 'date',
+                'type': 'keyword',
+                'label': u'日期'
+              }
+            ]
+          },
           'mapping': {
             'fields': [
                 {'name': 'date', 'label': u'日期'},
@@ -54,7 +63,9 @@ new_test_data = [
       {
         'type': 'report-paragraph',
         'options': {
-          'data': 'http://localhost:5000/data/1',
+          'data': {
+            'url': 'http://localhost:5000/data/1',
+          },
           'mapping': {
             'fields': [
               {'name': 'total', 'label': 'total'},
@@ -65,7 +76,56 @@ new_test_data = [
         }
       }
     ]
-  }
+  },
+  {
+    'id': 3,
+    'title': u'季度销售情况',
+    'layout': 'linear-layout',
+    'components': [
+      {
+        'type': 've-line',
+        'options': {
+          'data': {
+            'url': 'http://localhost:5000/data/2',
+            'query': [
+              {
+                'name': 'quater',
+                'required': True,
+                'type': 'selection',
+                'multiple': False,
+                'label': u'季度',
+                'options': [
+                  {'label': u'一季度', 'value': 0},
+                  {'label': u'二季度', 'value': 1},
+                  {'label': u'三季度', 'value': 2},
+                  {'label': u'四季度', 'value': 3}
+                ]
+              }
+            ]
+          },
+          'mapping': {
+            'fields': [
+                {'name': 'date', 'label': u'月份'},
+                {'name': 'sales', 'label': u'销售额'},
+                {'name': 'percent', 'label': u'占比'}
+            ],
+            'dimension': [0],
+            'metrics': [1, 2],
+            'yAxises': [
+                {'type': 'value', 'position': 'left'},
+                {'type': 'percent', 'position': 'right', 'metrics': [2]}
+            ],
+            'extra': {
+              'digit': 4
+            }
+          },
+          'extra': {
+            'width': '100%'
+          }
+        }
+      }
+    ]
+  },
 ]
 
 test_data = [
@@ -206,7 +266,8 @@ def get(id):
         if each['id'] == id:
             found = each
             break
-    if found is None:
-        abort(404)
-    report = Report.parse(json.dumps(found))
-    return jsonify(report.render())
+    # if found is None:
+    #     abort(404)
+    # report = Report.parse(json.dumps(found))
+    # return jsonify(report.render())
+    return jsonify(found)
